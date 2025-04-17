@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Minting Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <style>
+        :root {
+            --primary: #6e45e2;
+            --secondary: #88d3ce;
+            --dark: #1a1a2e;
+            --light: #f5f5f7;
+            --accent: #ff6b6b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        header {
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .connect-wallet {
+            padding: 0.7rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .connect-wallet:hover {
+            background: var(--dark);
+        }
+
+        .wallet-connected {
+            background: var(--secondary);
+            color: var(--dark);
+        }
+
+        .hero {
+            padding: 4rem 5%;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .hero p {
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            font-size: 1.1rem;
+        }
+
+        .mint-container {
+            max-width: 500px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .nft-preview {
+            width: 100%;
+            height: 300px;
+            background-color: #f0f0f0;
+            border-radius: 15px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .nft-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .mint-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .mint-amount {
+            display: flex;
+            align-items: center;
+        }
+
+        .mint-amount button {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .mint-amount input {
+            width: 60px;
+            height: 40px;
+            text-align: center;
+            margin: 0 10px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .mint-price {
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .mint-button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mint-button:hover {
+            background: var(--dark);
+            transform: translateY(-3px);
+        }
+
+        .mint-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 1rem;
+            text-align: center;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            background: var(--dark);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            
+            .mint-container {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">NFT Minter</div>
+        <button id="connectWallet" class="connect-wallet">Connect Wallet</button>
+    </header>
+
+    <section class="hero">
+        <h1>Mint Your Exclusive NFT</h1>
+        <p>Join our collection of unique digital assets on the Ethereum blockchain. Each NFT grants special access to our community events.</p>
+    </section>
+
+    <div class="mint-container">
+        <div class="nft-preview">
+            <img id="nftImage" src="https://ipfs.io/ipfs/QmZx8W6qZ7XZwLJz3L7J7XZwLJz3L7J7XZwLJz3L7J7XZwLJz3" alt="NFT Preview">
+        </div>
+
+        <div class="mint-controls">
+            <div class="mint-amount">
+                <button id="decreaseAmount">-</button>
+                <input type="number" id="mintAmount" value="1" min="1" max="5">
+                <button id="increaseAmount">+</button>
+            </div>
+            <div class="mint-price">
+                <span id="totalPrice">0.05 ETH</span>
+            </div>
+        </div>
+
+        <button id="mintButton" class="mint-button" disabled>Connect Wallet to Mint</button>
+        <div id="statusMessage" class="status"></div>
+    </div>
+
+    <footer>
+        <p>© 2023 NFT Minter. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Contract ABI (simplified for example)
+        const contractABI = [
+            {
+                "inputs": [],
+                "name": "mint",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "mintMultiple",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "price",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        // Contract address (replace with your actual contract address)
+        const contractAddress = "0x1234567890123456789012345678901234567890";
+
+        let web3;
+        let accounts = [];
+        let contract;
+
+        // Initialize Web3
+        async function initWeb3() {
+            if (window.ethereum) {
+                try {
+                    web3 = new Web3(window.ethereum);
+                    await window.ethereum.enable();
+                    
+                    // Get accounts
+                    accounts = await web3.eth.getAccounts();
+                    
+                    // Initialize contract
+                    contract = new web3.eth.Contract(contractABI, contractAddress);
+                    
+                    // Update UI
+                    updateUI();
+                    
+                    // Listen for account changes
+                    window.ethereum.on('accountsChanged', (newAccounts) => {
+                        accounts = newAccounts;
+                        updateUI();
+                    });
+                    
+                    return true;
+                } catch (error) {
+                    console.error("User denied account access");
+                    return false;
+                }
+            } else {
+                console.log("Non-Ethereum browser detected. Consider installing MetaMask!");
+                return false;
+            }
+        }
+
+        // Update UI based on wallet connection state
+        function updateUI() {
+            const connectButton = document.getElementById('connectWallet');
+            const mintButton = document.getElementById('mintButton');
+            
+            if (accounts.length > 0) {
+                // Wallet connected
+                connectButton.textContent = `${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`;
+                connectButton.classList.add('wallet-connected');
+                mintButton.disabled = false;
+                mintButton.textContent = 'Mint Now';
+            } else {
+                // Wallet not connected
+                connectButton.textContent = 'Connect Wallet';
+                connectButton.classList.remove('wallet-connected');
+                mintButton.disabled = true;
+                mintButton.textContent = 'Connect Wallet to Mint';
+            }
+        }
+
+        // Mint NFT function
+        async function mintNFT(amount) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = 'Processing transaction...';
+            
+            try {
+                const price = await contract.methods.price().call();
+                const totalPrice = web3.utils.toWei((price * amount).toString(), 'ether');
+                
+                if (amount === 1) {
+                    await contract.methods.mint().send({
+                        from: accounts[0],
+                        value: totalPrice
+                    });
+                } else {
+                    await contract.methods.mintMultiple(amount).send({
+                        from: accounts[0],
+                        value: totalPrice
+                    });
+                }
+                
+                statusMessage.textContent = 'Mint successful! Check your wallet.';
+                setTimeout(() => {
+                    statusMessage.textContent = '';
+                }, 5000);
+            } catch (error) {
+                console.error("Minting failed:", error);
+                statusMessage.textContent = 'Minting failed. Please try again.';
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('connectWallet').addEventListener('click', async () => {
+            if (accounts.length === 0) {
+                await initWeb3();
+            }
+        });
+
+        document.getElementById('mintButton').addEventListener('click', async () => {
+            const amount = parseInt(document.getElementById('mintAmount').value);
+            await mintNFT(amount);
+        });
+
+        document.getElementById('increaseAmount').addEventListener('click', () => {
+            const input = document.getElementById('mintAmount');
+            let value = parseInt(input.value);
+            if (value < 5) {
+                input.value = value + 1;
+                updateTotalPrice();
+            }
+        });
+
+        document.getElementById('decreaseAmount').addEventListener('click', () => {
+            const input = document.getElementById('mintAmount');
+            let value = parseInt(input.value);
+            if (value > 1) {
+                input.value = value - 1;
+                updateTotalPrice();
+            }
+        });
+
+        document.getElementById('mintAmount').addEventListener('change', () => {
+            updateTotalPrice();
+        });
+
+        // Update total price display
+        function updateTotalPrice() {
+            const amount = parseInt(document.getElementById('mintAmount').value);
+            const pricePerNFT = 0.05; // ETH
+            const totalPrice = (amount * pricePerNFT).toFixed(2);
+            document.getElementById('totalPrice').textContent = `${totalPrice} ETH`;
+        }
+
+        // Initialize
+        updateTotalPrice();
+    </script>
+</body>
+</html>
